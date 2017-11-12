@@ -8,10 +8,13 @@ Imports ProductStructureTypeLib 'Include Product
 Module CoreModule
     Public CATIA As Object
     Public mainDoc As INFITF.Document
-    Private czyShim10 As Boolean = False
-    Private czyShim5 As Boolean = False
+    Private orShim10 As Boolean = False
+    'Private orShim10 As Boolean = False
+    Public libraryLocation As String = "T:\01\pp\lib\KUKA\VISSERIE"
+    Public containingProduct As Product
+    Public containingProducts As Products
 
-    'Startowy Subroutine
+    'Start Subroutine
     Public Sub Main()
         Dim iErr As Integer
 
@@ -33,45 +36,36 @@ Module CoreModule
         If TypeName(mainDoc) <> "ProductDocument" Then
             MsgBox("In CATIA Active window must be the Assembly (.CATProduct)")
             Exit Sub
-        Else ' Jeżeli wszystko działa to wykonuje się to co poniżej
-            Select Case MsgBox("Do you want start to color holes?", MsgBoxStyle.YesNo, "Tool to color Holes")
+        Else 'If everything works, then do the following
+            Select Case MsgBox("You running program to insert threads/dowels. Do you have shim 10mm?", MsgBoxStyle.YesNo, "Tool to insert threads/dowels")
                 Case MsgBoxResult.Yes
+                    orShim10 = True
                     Exit Select
                 Case MsgBoxResult.No
-                    Exit Sub
+                    orShim10 = False
+                    'Select Case MsgBox("Do you have shim 5mm?", MsgBoxStyle.YesNo, "Tool to insert threads/dowels")
+                    '    Case MsgBoxResult.Yes
+                    '        orShim10 = True
+                    '        Exit Select
+                    '    Case MsgBoxResult.No
+                    '        orShim10 = False
+                    '        Exit Select
+                    'End Select
             End Select
-            Select Case MsgBox("Do you have shim 10mm?", MsgBoxStyle.YesNo, "Tool to insert threads")
-                Case MsgBoxResult.Yes
-                    czyShim10 = True
-                    Exit Select
-                Case MsgBoxResult.No
-                    czyShim10 = False
-                    Select Case MsgBox("Do you have shim 5mm?", MsgBoxStyle.YesNo, "Tool to insert threads")
-                        Case MsgBoxResult.Yes
-                            czyShim5 = True
-                            Exit Select
-                        Case MsgBoxResult.No
-                            czyShim5 = False
-                            Exit Select
-                    End Select
-            End Select
-            'arrayWithFeatures()
             DetectHoles()
+            'MoveAddedElements()
         End If
     End Sub
     'Loading All 
-
     Sub DetectHoles()
         Dim arrayHoles(1, 3) As String
         Dim oSelection2
-        Dim dwaElementy As Integer
-        Dim czyGwintowanyOtwor As CatHoleThreadingMode
-        Dim dlugoscHole1 As Double
-        Dim dlugoscHole2 As Double
-        Dim dlugoscSruby As Double
+        Dim twoElements, orDowel As Integer
+        Dim orThreadingHole As CatHoleThreadingMode
+        Dim lenghtHole1, lenghtHole2, lenghtElement As Double
         Dim arrayOfVariantOfBSTR1(0)
-
-        Dim newMatrix(11)
+        Dim CompoObject As Composition
+        CompoObject = New Composition
 
         Dim product1 As Product
         product1 = mainDoc.Product
@@ -79,56 +73,99 @@ Module CoreModule
         Dim products1 As Products
         products1 = product1.Products
 
-        Dim product2 As Product
-        Dim products2 As Products
-
         oSelection2 = mainDoc.Selection
-        dwaElementy = oSelection2.Count
+        twoElements = oSelection2.Count
 
-        'Ładowanie arrayHoles
-        For i = 0 To oSelection2.Count - 1
-            czyGwintowanyOtwor = oSelection2.ITEM(i + 1).Value.ThreadingMode
-            If czyGwintowanyOtwor = CatHoleThreadingMode.catThreadedHoleThreading Then
-                'jeżeli hole jest z gwintem to:
-                arrayHoles(i, 0) = oSelection2.Item(i + 1).Value.HoleThreadDescription.Value ' tylko dla thread np M10
+        'Loading arrayHoles
+        For i = 0 To twoElements - 1
+            orThreadingHole = oSelection2.Item(i + 1).Value.ThreadingMode
+            If orThreadingHole = CatHoleThreadingMode.catThreadedHoleThreading Then
+                'If the hole is a thread:
+                arrayHoles(i, 0) = oSelection2.Item(i + 1).Value.HoleThreadDescription.Value 'Only for thread e.g M10
             Else
-                arrayHoles(i, 0) = oSelection2.Item(i + 1).Value.Diameter.Value 'np 10 
+                arrayHoles(i, 0) = oSelection2.Item(i + 1).Value.Diameter.Value 'e.g 10
+                orDowel += 1
             End If
-
-            'arrayHoles(i, 0) = oSelection2.Item(i + 1).Value.Name 'np Hole.1
-            'arrayHoles(i, 1) = oSelection2.Item(i + 1).LeafProduct.PartNumber 'np Konsola
-            arrayHoles(i, 1) = oSelection2.Item(i + 1).LeafProduct.Parent.Parent.Name ' np BG_04.1
-            arrayHoles(i, 2) = oSelection2.Item(i + 1).Value.BottomLimit.Dimension.Value 'np Hole.1
+            arrayHoles(i, 1) = oSelection2.Item(i + 1).LeafProduct.Parent.Parent.Name 'e.g BG_04.1
+            arrayHoles(i, 2) = oSelection2.Item(i + 1).Value.BottomLimit.Dimension.Value 'e.g What depth?
         Next
 
-        'przypisujemy wartosc
-        product2 = products1.Item(arrayHoles(0, 1))
-        products2 = product2.Products
+        'we assign a value
+        containingProduct = products1.Item(arrayHoles(0, 1))
+        containingProducts = containingProduct.Products
 
-        'Liczymy
+        'Counting
+        Double.TryParse(arrayHoles(0, 2), lenghtHole1)
+        Double.TryParse(arrayHoles(1, 2), lenghtHole2)
 
-        Double.TryParse(arrayHoles(0, 2), dlugoscHole1)
-        Double.TryParse(arrayHoles(1, 2), dlugoscHole2)
-
-        If czyShim10 = True Then
-            dlugoscSruby = dlugoscHole1 + dlugoscHole2 + 10
-        ElseIf czyShim5 = True Then
-            dlugoscSruby = dlugoscHole1 + dlugoscHole2 + 5
+        If orShim10 = True Then
+            lenghtElement = lenghtHole1 + lenghtHole2 + 10
         Else
-            dlugoscSruby = dlugoscHole1 + dlugoscHole2
+            lenghtElement = lenghtHole1 + lenghtHole2
         End If
 
-        'Wstawiamy elementy  głowna lokalizacja elementów: T:\01\pp\lib\KUKA\VISSERIE
-        If dlugoscSruby > 55 Then
+        'Which element we need to insert
+        If orDowel = 2 Then 'Insert dowel
+            CompoObject.searchForDowel(arrayHoles(0, 0), lenghtElement)
+            'In original: \/
+            'arrayOfVariantOfBSTR1(0) = libraryLocation & CompoObject.file
+            'For tests in house: \/
             arrayOfVariantOfBSTR1(0) = "E:\Pliki 3D\SrubaM10x55.CATPart"
-        ElseIf dlugoscSruby > 50 Then
-            arrayOfVariantOfBSTR1(0) = "E:\Pliki 3D\SrubaM10x50.CATPart"
+        Else 'Insert screw
+            'Dal and i = 1 because first I choose a through hole !!!!!!!!!!!!!!!!!!!!
+            CompoObject.searchForScrew(arrayHoles(1, 0), lenghtElement)
+            'In original: \/
+            'arrayOfVariantOfBSTR1(0) = libraryLocation & CompoObject.file
+            'For tests in house: \/
+            arrayOfVariantOfBSTR1(0) = "E:\Pliki 3D\SrubaM10x55.CATPart"
         End If
 
-        products2.AddComponentsFromFiles(arrayOfVariantOfBSTR1, "All")
+        ''For test on constraints
+        'containingProducts.AddComponentsFromFiles(arrayOfVariantOfBSTR1, "All")
 
+        'Dim constraints1 As Constraints
+        'constraints1 = containingProduct.Connections("CATIAConstraints")
+
+        ''Axis of screw
+        'Dim reference1 As Reference
+        'reference1 = containingProduct.CreateReferenceFromName("siema")
+
+        ''Axis of
+        'Dim reference2 As Reference
+        'reference2 = containingProduct.CreateReferenceFromName("siema")
+
+        'Dim constraint1 As Constraint
+        'constraint1 = constraints1.AddBiEltCst(CatConstraintType.catCstTypeOn, reference1, reference2)
+
+AnotherElement:
+        oSelection2.clear()
+
+        oSelection2.add(containingProducts)
+
+        CATIA.StartCommand("Existing Component With Positioning")
+
+        AppActivate("CATIA V5 - [" & mainDoc.Name & "]")
+
+        Threading.Thread.Sleep(500)
+
+        My.Computer.Keyboard.SendKeys(arrayOfVariantOfBSTR1(0), True)
+
+        My.Computer.Keyboard.SendKeys("{ENTER}", True)
+
+        'Add element
+        'containingProducts.AddComponentsFromFiles(arrayOfVariantOfBSTR1, "All")
+
+        oSelection2.clear()
+
+        Select Case MsgBox("Another one?", MsgBoxStyle.YesNo, "Tool to insert threads/dowels")
+            Case MsgBoxResult.Yes
+                GoTo AnotherElement
+                Exit Select
+            Case MsgBoxResult.No
+                Exit Sub
+        End Select
     End Sub
-
+    'For this moment is not neseserry
     Sub MoveAddedElements()
         Dim iMatrix(11)
         iMatrix(0) = 1.0
@@ -144,104 +181,17 @@ Module CoreModule
         iMatrix(10) = 100.0
         iMatrix(11) = 100.0
 
-        'Przesuwanie elementów
-        'Dim sruba As Product
-        'sruba = products2.Item(products2.Count)
+        containingProduct = containingProducts.Item(containingProducts.Count)
 
-        'sruba.Move.Apply(iMatrix)
+        CATIA.StartCommand("Existing Component With Positioning")
 
-        ' Dim proba As Product
-        'proba = products2.Item(3)
+        'containingProduct.Move.Apply(iMatrix)
 
         'Dim pozycjaCompasu As DNBASY.AsyMotionTarget
 
-        'GetCompassPosition(iMatrix, DNBASY.AsyMotionTargetDataFormat.AsyMotionTarget3x4Matrix)
+        'pozycjaCompasu.GetCompassPosition(iMatrix, DNBASY.AsyMotionTargetDataFormat.AsyMotionTarget3x4Matrix)
 
         'proba.Move.Apply(iMatrix)
-    End Sub
-
-    Sub arrayWithFeatures()
-        Dim arrayPomocne(0, 2) As String
-        Dim oSelection
-        Dim ileHole As Integer
-        Dim visPropertySet As VisPropertySet
-
-        oSelection = mainDoc.Selection
-        oSelection.Clear()
-
-        visPropertySet = oSelection.VisProperties
-
-        oSelection.Search("n:*Hole*,all")
-
-        ileHole = oSelection.Count
-        ReDim arrayPomocne(ileHole - 1, 2)
-
-        For i = 0 To oSelection.Count - 1
-            arrayPomocne(i, 0) = oSelection.Item(i + 1).Value.Name
-            arrayPomocne(i, 1) = oSelection.Item(i + 1).LeafProduct.PartNumber
-            arrayPomocne(i, 2) = oSelection.Item(i + 1).Value.Diameter.Value
-        Next
-
-        'Druga Petla
-        For InxSel = 0 To ileHole - 1
-            oSelection.Clear()
-
-            Dim documents1 As Documents
-            documents1 = CATIA.Documents
-
-            Dim partDocument1 As PartDocument
-            partDocument1 = documents1.Item(arrayPomocne(InxSel, 1) & ".CATPart")
-
-            Dim part1 As Part
-            part1 = partDocument1.Part
-
-            Dim bodies1 As Bodies
-            bodies1 = part1.Bodies
-
-            Dim body1 As Body
-            body1 = bodies1.Item("PartBody")
-
-            Dim shapes1 As Shapes
-            shapes1 = body1.Shapes
-
-            Dim hole1 As Hole
-            hole1 = shapes1.Item(arrayPomocne(InxSel, 0))
-
-            oSelection.Add(hole1)
-            If arrayPomocne(InxSel, 2) = 4 Then
-                oSelection.VisProperties.SetRealColor(0, 133, 255, 0)
-            ElseIf arrayPomocne(InxSel, 2) = 5 Then
-                oSelection.VisProperties.SetRealColor(0, 133, 255, 0)
-            ElseIf arrayPomocne(InxSel, 2) = 6 Then
-                oSelection.VisProperties.SetRealColor(0, 133, 255, 0)
-            ElseIf arrayPomocne(InxSel, 2) = 8 Then
-                oSelection.VisProperties.SetRealColor(0, 133, 255, 0)
-            ElseIf arrayPomocne(InxSel, 2) = 10 Then
-                oSelection.VisProperties.SetRealColor(0, 133, 255, 0)
-            ElseIf arrayPomocne(InxSel, 2) = 12 Then
-                oSelection.VisProperties.SetRealColor(0, 133, 255, 0)
-            ElseIf arrayPomocne(InxSel, 2) = 4.5 Then
-                oSelection.VisProperties.SetRealColor(0, 175, 0, 0)
-            ElseIf arrayPomocne(InxSel, 2) = 4.5 Then
-                oSelection.VisProperties.SetRealColor(0, 175, 0, 0)
-            ElseIf arrayPomocne(InxSel, 2) = 5.5 Then
-                oSelection.VisProperties.SetRealColor(0, 175, 0, 0)
-            ElseIf arrayPomocne(InxSel, 2) = 6.6 Then
-                oSelection.VisProperties.SetRealColor(0, 175, 0, 0)
-            ElseIf arrayPomocne(InxSel, 2) = 9 Then
-                oSelection.VisProperties.SetRealColor(0, 175, 0, 0)
-            ElseIf arrayPomocne(InxSel, 2) = 11 Then
-                oSelection.VisProperties.SetRealColor(0, 175, 0, 0)
-            ElseIf arrayPomocne(InxSel, 2) = 13.5 Then
-                oSelection.VisProperties.SetRealColor(0, 175, 0, 0)
-            Else
-                oSelection.VisProperties.SetRealColor(230, 239, 20, 0)
-            End If
-        Next
-        oSelection.Clear()
-
-        MsgBox("Colored: " & ileHole & " elements.")
-
     End Sub
 
 End Module

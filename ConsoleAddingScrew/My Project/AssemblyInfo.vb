@@ -8,7 +8,7 @@ Imports System.Runtime.InteropServices
 
 ' Review the values of the assembly attributes
 
-<Assembly: AssemblyTitle("ConsoleAddingScrew")> 
+<Assembly: AssemblyTitle("ConsoleAddingScrew 1.0")> 
 <Assembly: AssemblyDescription("")> 
 <Assembly: AssemblyCompany("Microsoft")> 
 <Assembly: AssemblyProduct("ConsoleAddingScrew")> 

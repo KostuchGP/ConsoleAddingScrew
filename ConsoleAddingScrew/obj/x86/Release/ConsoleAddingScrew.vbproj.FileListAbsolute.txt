@@ -1,0 +1,8 @@
+E:\Dokumenty\Informatyka\Git\ProjektsVisualStudio\ConsoleAddingScrew\ConsoleAddingScrew\bin\Release\ConsoleAddingScrew 1.1.exe
+E:\Dokumenty\Informatyka\Git\ProjektsVisualStudio\ConsoleAddingScrew\ConsoleAddingScrew\bin\Release\ConsoleAddingScrew 1.1.pdb
+E:\Dokumenty\Informatyka\Git\ProjektsVisualStudio\ConsoleAddingScrew\ConsoleAddingScrew\bin\Release\ConsoleAddingScrew 1.1.xml
+E:\Dokumenty\Informatyka\Git\ProjektsVisualStudio\ConsoleAddingScrew\ConsoleAddingScrew\obj\x86\Release\ConsoleAddingScrew.Resources.resources
+E:\Dokumenty\Informatyka\Git\ProjektsVisualStudio\ConsoleAddingScrew\ConsoleAddingScrew\obj\x86\Release\ConsoleAddingScrew.vbproj.GenerateResource.Cache
+E:\Dokumenty\Informatyka\Git\ProjektsVisualStudio\ConsoleAddingScrew\ConsoleAddingScrew\obj\x86\Release\ConsoleAddingScrew 1.1.exe
+E:\Dokumenty\Informatyka\Git\ProjektsVisualStudio\ConsoleAddingScrew\ConsoleAddingScrew\obj\x86\Release\ConsoleAddingScrew 1.1.xml
+E:\Dokumenty\Informatyka\Git\ProjektsVisualStudio\ConsoleAddingScrew\ConsoleAddingScrew\obj\x86\Release\ConsoleAddingScrew 1.1.pdb
